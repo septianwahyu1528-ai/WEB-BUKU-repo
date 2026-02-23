@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        img { max-width: 200px; height: auto; border: 1px solid #ccc; margin: 10px 0; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Direct Image Load Test</h1>
+    
+    <div class="test">
+        <h3>Test 1: Static hardcoded image</h3>
+        <img src="http://localhost:5000/images/laskar-pelangi.svg" alt="Test 1" onerror="this.nextElementSibling.textContent='FAILED'">
+        <p id="test1-status">Loading...</p>
+    </div>
+
+    <div class="test">
+        <h3>Test 2: Fetch image via fetch API</h3>
+        <div id="test2-status">Loading...</div>
+    </div>
+
+    <div class="test">
+        <h3>Test 3: Load books from API and display</h3>
+        <div id="test3-status">Loading...</div>
+        <div id="books-container"></div>
+    </div>
+
+    <script>
+        // Test 1 - onload
+        document.querySelector('[alt="Test 1"]').onload = () => {
+            document.getElementById('test1-status').innerHTML = '<span class="success">✓ Image loaded successfully!</span>';
+        };
+
+        // Test 2
+        fetch('http://localhost:5000/images/bumi.svg')
+            .then(r => {
+                document.getElementById('test2-status').innerHTML = 
+                    `<span class="success">✓ Fetch successful (${r.status})</span><br>` +
+                    `<img src="http://localhost:5000/images/bumi.svg" style="width:150px;">`;
+            })
+            .catch(e => {
+                document.getElementById('test2-status').innerHTML = 
+                    `<span class="error">✗ Fetch failed: ${e.message}</span>`;
+            });
+
+        // Test 3
+        fetch('http://localhost:5174/api/books')
+            .then(r => r.json())
+            .then(data => {
+                const books = data.data || data;
+                let html = `<span class="success">✓ Got ${books.length} books</span><br><br>`;
+                books.forEach(book => {
+                    html += `
+                        <div style="display:inline-block; margin:10px; text-align:center;">
+                            <img src="http://localhost:5000/images/${book.image}" 
+                                 style="width:100px; height:150px; object-fit:cover; border:1px solid #ccc;" 
+                                 alt="${book.title}"
+                                 onerror="this.style.background='#eee'; this.innerHTML='Error'">
+                            <p><small>${book.title}</small></p>
+                        </div>
+                    `;
+                });
+                document.getElementById('test3-status').innerHTML = html;
+            })
+            .catch(e => {
+                document.getElementById('test3-status').innerHTML = 
+                    `<span class="error">✗ API Error: ${e.message}</span>`;
+            });
+    </script>
+</body>
+</html>

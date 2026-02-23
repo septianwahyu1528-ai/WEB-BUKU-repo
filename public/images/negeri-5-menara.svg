@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300">
+  <defs>
+    <linearGradient id="grad7" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="300" fill="url(#grad7)"/>
+  <rect x="10" y="10" width="180" height="280" fill="none" stroke="#fff" stroke-width="2"/>
+  <text x="100" y="70" font-family="Arial" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">Negeri 5</text>
+  <text x="100" y="100" font-family="Arial" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">Menara</text>
+  <text x="100" y="150" font-family="Arial" font-size="12" fill="#fff" text-anchor="middle">A. Fuadi</text>
+  <text x="100" y="280" font-family="Arial" font-size="10" fill="#fff" text-anchor="middle">⭐ 4.8</text>
+</svg>

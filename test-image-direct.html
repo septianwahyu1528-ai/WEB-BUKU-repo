@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Direct Image Loading</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #333; }
+        .section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
+        .image-card { border: 2px solid #ddd; border-radius: 8px; overflow: hidden; }
+        .image-card img { width: 100%; height: 250px; object-fit: cover; background: #f0f0f0; display: block; }
+        .image-info { padding: 10px; font-size: 12px; }
+        .error { background: #ffebee; border-left: 4px solid #e74c3c; padding: 10px; margin: 10px 0; }
+        .success { background: #e8f5e9; border-left: 4px solid #27ae60; padding: 10px; margin: 10px 0; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Test Direct Image Loading</h1>
+        
+        <div class="section">
+            <h2>Direct Backend URLs (http://localhost:5000/images/)</h2>
+            <div id="direct-test"></div>
+        </div>
+
+        <div class="section">
+            <h2>Logs</h2>
+            <div id="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        const books = [
+            { id: 1, title: 'Laskar Pelangi', image: 'laskar-pelangi.svg' },
+            { id: 2, title: 'Bumi', image: 'bumi.svg' },
+            { id: 3, title: 'Ayah', image: 'ayah.svg' },
+            { id: 4, title: 'Aku dan Dilan', image: 'aku-dilan.svg' },
+            { id: 5, title: 'Laut Bercerita', image: 'laut-bercerita.svg' },
+            { id: 6, title: 'Filosofi Teras', image: 'filosofi-teras.svg' }
+        ];
+
+        const log = (msg, type = 'info') => {
+            console.log(msg);
+            const logsDiv = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'log';
+            div.textContent = msg;
+            logsDiv.appendChild(div);
+        };
+
+        let html = '<div class="image-grid">';
+        books.forEach(book => {
+            const url = `http://localhost:5000/images/${book.image}`;
+            html += `
+                <div class="image-card">
+                    <img 
+                        src="${url}" 
+                        alt="${book.title}"
+                        onload="console.log('✅ Loaded: ${book.image}')"
+                        onerror="console.log('❌ Failed: ${book.image}'); this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22250%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22250%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2250%22 fill=%22%23999%22%3E❌%3C/text%3E%3C/svg%3E'"
+                    />
+                    <div class="image-info">
+                        <strong>${book.title}</strong><br/>
+                        ${book.image}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        document.getElementById('direct-test').innerHTML = html;
+
+        log('🚀 Page loaded - testing image URLs...');
+        books.forEach(book => {
+            log(`Testing: http://localhost:5000/images/${book.image}`);
+        });
+
+        // Test API
+        fetch('http://localhost:5000/api/books')
+            .then(r => {
+                log(`✅ API /api/books: ${r.status}`, 'success');
+                return r.json();
+            })
+            .then(data => {
+                log(`✅ API returned ${(data.data || data).length} books`, 'success');
+            })
+            .catch(e => log(`❌ API Error: ${e.message}`, 'error'));
+    </script>
+</body>
+</html>

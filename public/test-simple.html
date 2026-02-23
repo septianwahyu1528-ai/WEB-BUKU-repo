@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Image Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #333; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 250px; display: block; background: #f0f0f0; object-fit: cover; }
+        .info { padding: 10px; }
+        .info strong { display: block; margin-bottom: 5px; }
+        .info small { color: #999; }
+        .test { margin: 20px 0; padding: 20px; background: white; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Direct Image Test - Backend URL</h1>
+        
+        <div class="test">
+            <h2>Backend Status</h2>
+            <p>Backend: <span id="backend-status">checking...</span></p>
+            <p>Images Folder: <span id="images-status">checking...</span></p>
+        </div>
+
+        <h2>Images Gallery</h2>
+        <div class="grid" id="gallery"></div>
+    </div>
+
+    <script>
+        const books = [
+            { title: 'Laskar Pelangi', image: 'laskar-pelangi.svg' },
+            { title: 'Bumi', image: 'bumi.svg' },
+            { title: 'Ayah', image: 'ayah.svg' },
+            { title: 'Aku dan Dilan', image: 'aku-dilan.svg' },
+            { title: 'Laut Bercerita', image: 'laut-bercerita.svg' },
+            { title: 'Filosofi Teras', image: 'filosofi-teras.svg' }
+        ];
+
+        // Check backend
+        fetch('http://localhost:5000/api/health')
+            .then(r => {
+                document.getElementById('backend-status').textContent = r.ok ? '✅ Online' : '❌ Error';
+            })
+            .catch(() => {
+                document.getElementById('backend-status').textContent = '❌ Offline';
+            });
+
+        // Check images endpoint
+        fetch('http://localhost:5000/images/')
+            .then(r => {
+                document.getElementById('images-status').innerHTML = r.ok ? '✅ Accessible' : `❌ Error ${r.status}`;
+            })
+            .catch(e => {
+                document.getElementById('images-status').innerHTML = `❌ ${e.message}`;
+            });
+
+        // Render gallery
+        const gallery = document.getElementById('gallery');
+        books.forEach(book => {
+            const url = `http://localhost:5000/images/${book.image}`;
+            const html = `
+                <div class="card">
+                    <img 
+                        src="${url}" 
+                        alt="${book.title}"
+                        onerror="this.style.background='#ffebee'; this.style.color='#c62828'; this.textContent='❌ Failed to load'"
+                    />
+                    <div class="info">
+                        <strong>${book.title}</strong>
+                        <small>${book.image}</small>
+                    </div>
+                </div>
+            `;
+            gallery.innerHTML += html;
+        });
+    </script>
+</body>
+</html>

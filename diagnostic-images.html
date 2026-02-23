@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Diagnostic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test h2 {
+            margin-top: 0;
+        }
+        .test-image {
+            border: 2px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        img {
+            max-width: 200px;
+            max-height: 300px;
+            border: 1px solid #999;
+            margin: 10px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .loading {
+            background: #e2f0ff;
+            color: #004085;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Image Loading Diagnostic</h1>
+    
+    <div class="test">
+        <h2>Test 1: Direct SVG from Backend</h2>
+        <div id="test1-status" class="status loading">⏳ Loading...</div>
+        <img 
+            id="test1-img" 
+            src="http://localhost:5000/images/laskar-pelangi.svg"
+            alt="Laskar Pelangi"
+            onload="document.getElementById('test1-status').textContent = '✅ Image loaded successfully'; document.getElementById('test1-status').className = 'status success';"
+            onerror="document.getElementById('test1-status').textContent = '❌ Failed to load image'; document.getElementById('test1-status').className = 'status error';"
+        />
+    </div>
+
+    <div class="test">
+        <h2>Test 2: Check Database Books</h2>
+        <div id="test2-status" class="status loading">⏳ Fetching...</div>
+        <div id="test2-results"></div>
+    </div>
+
+    <div class="test">
+        <h2>Test 3: Load All Book Images</h2>
+        <div id="test3-status" class="status loading">⏳ Fetching books...</div>
+        <div id="test3-images"></div>
+    </div>
+
+    <script>
+        // Test 2: Fetch books from API
+        fetch('http://localhost:5000/api/books')
+            .then(r => r.json())
+            .then(data => {
+                const books = data.data || data;
+                let html = '<table border="1" cellpadding="10"><tr><th>ID</th><th>Title</th><th>Image</th><th>Status</th></tr>';
+                
+                books.forEach(book => {
+                    html += `<tr>
+                        <td>${book.id}</td>
+                        <td>${book.title}</td>
+                        <td>${book.image || 'NULL'}</td>
+                        <td><span id="status-${book.id}" class="status loading">⏳</span></td>
+                    </tr>`;
+                    
+                    // Test if image loads
+                    if (book.image) {
+                        const testImg = new Image();
+                        testImg.onload = () => {
+                            document.getElementById(`status-${book.id}`).textContent = '✅';
+                            document.getElementById(`status-${book.id}`).className = 'status success';
+                        };
+                        testImg.onerror = () => {
+                            document.getElementById(`status-${book.id}`).textContent = '❌';
+                            document.getElementById(`status-${book.id}`).className = 'status error';
+                        };
+                        testImg.src = `http://localhost:5000/images/${book.image}`;
+                    }
+                });
+                
+                html += '</table>';
+                document.getElementById('test2-results').innerHTML = html;
+                document.getElementById('test2-status').textContent = `✅ Loaded ${books.length} books`;
+                document.getElementById('test2-status').className = 'status success';
+            })
+            .catch(e => {
+                document.getElementById('test2-status').textContent = `❌ Error: ${e.message}`;
+                document.getElementById('test2-status').className = 'status error';
+            });
+
+        // Test 3: Display all book images
+        fetch('http://localhost:5000/api/books')
+            .then(r => r.json())
+            .then(data => {
+                const books = data.data || data;
+                let html = '';
+                
+                books.forEach(book => {
+                    if (book.image) {
+                        html += `
+                            <div style="display: inline-block; margin: 10px; text-align: center; border: 1px solid #ccc; padding: 10px;">
+                                <div>${book.title}</div>
+                                <img 
+                                    src="http://localhost:5000/images/${book.image}" 
+                                    alt="${book.title}"
+                                    style="width: 180px; height: 270px; object-fit: cover; margin: 10px 0;"
+                                    onload="console.log('✅ ${book.image} loaded')"
+                                    onerror="console.error('❌ ${book.image} failed')"
+                                    title="File: ${book.image}"
+                                />
+                                <div><code>${book.image}</code></div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                document.getElementById('test3-images').innerHTML = html;
+                document.getElementById('test3-status').textContent = `✅ Displaying book images`;
+                document.getElementById('test3-status').className = 'status success';
+            })
+            .catch(e => {
+                document.getElementById('test3-status').textContent = `❌ Error: ${e.message}`;
+                document.getElementById('test3-status').className = 'status error';
+            });
+    </script>
+</body>
+</html>

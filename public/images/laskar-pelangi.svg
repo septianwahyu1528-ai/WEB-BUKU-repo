@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8E72;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="300" fill="url(#grad1)"/>
+  <rect x="10" y="10" width="180" height="280" fill="none" stroke="#fff" stroke-width="2"/>
+  <text x="100" y="80" font-family="Arial" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">Laskar</text>
+  <text x="100" y="110" font-family="Arial" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">Pelangi</text>
+  <text x="100" y="150" font-family="Arial" font-size="12" fill="#fff" text-anchor="middle">Andrea Hirata</text>
+  <text x="100" y="280" font-family="Arial" font-size="10" fill="#fff" text-anchor="middle">⭐ 4.8</text>
+</svg>
