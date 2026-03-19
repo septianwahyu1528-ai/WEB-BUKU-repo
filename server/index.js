@@ -141,7 +141,7 @@ app.post('/api/auth/register', async (req, res) => {
 
         const result = await query(
             'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING *',
-            [name, email, password, 'pelanggan']
+            [name, email, password, 'user']
         );
 
         const user = result.rows[0];
