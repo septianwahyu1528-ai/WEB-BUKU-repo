@@ -9,8 +9,25 @@ import path from 'path';
 
 dotenv.config();
 
-// Multer setup untuk upload
-const storage = multer.memoryStorage();
+// Buat folder images jika belum ada
+const imagesDir = path.join(path.resolve(), 'public', 'images');
+if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
+    console.log('✅ Folder /public/images/ dibuat');
+}
+
+// Multer setup untuk upload - simpan ke disk
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, imagesDir);
+    },
+    filename: (req, file, cb) => {
+        // Buat nama file unik dengan timestamp
+        const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
+        cb(null, uniqueName);
+    }
+});
+
 const upload = multer({ 
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
@@ -62,6 +79,44 @@ const verifyToken = (req, res, next) => {
     
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        return res.status(403).json({ error: 'Token tidak valid' });
+    }
+};
+
+// Middleware untuk verify admin role
+const verifyAdmin = (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: 'Token tidak ditemukan' });
+    }
+    
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.role !== 'admin') {
+            return res.status(403).json({ error: 'Akses ditolak. Hanya admin yang bisa mengakses fitur ini.' });
+        }
+        req.user = decoded;
+        next();
+    } catch (err) {
+        return res.status(403).json({ error: 'Token tidak valid' });
+    }
+};
+
+// Middleware untuk verify customer role
+const verifyCustomer = (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: 'Token tidak ditemukan' });
+    }
+    
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (!['customer', 'user', 'pelanggan'].includes(decoded.role)) {
+            return res.status(403).json({ error: 'Akses ditolak. Hanya pelanggan yang bisa akses fitur ini.' });
+        }
         req.user = decoded;
         next();
     } catch (err) {
@@ -141,7 +196,7 @@ app.post('/api/auth/register', async (req, res) => {
 
         const result = await query(
             'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING *',
-            [name, email, password, 'user']
+            [name, email, password, 'pelanggan']
         );
 
         const user = result.rows[0];
@@ -205,7 +260,7 @@ app.post('/api/books', verifyToken, upload.single('image'), async (req, res) => 
         }
 
         const { title, author, price, stock, rating, description, isbn, publisher, publication_date, category } = req.body;
-        const imageName = req.file ? req.file.originalname : title.toLowerCase().replace(/\s+/g, '-') + '.svg';
+        const imageName = req.file ? req.file.filename : title.toLowerCase().replace(/\s+/g, '-') + '.svg';
 
         const result = await pool.query(
             'INSERT INTO books (title, author, price, stock, rating, image, description, isbn, publisher, publication_date, category) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
@@ -232,7 +287,7 @@ app.post('/api/books/:id/image', verifyToken, upload.single('image'), async (req
             return res.status(400).json({ error: 'Tidak ada file gambar' });
         }
 
-        const imageName = req.file.originalname;
+        const imageName = req.file.filename;
 
         const result = await pool.query(
             'UPDATE books SET image = $1 WHERE id = $2 RETURNING *',
@@ -256,25 +311,24 @@ app.put('/api/books/:id', verifyToken, upload.single('image'), async (req, res) 
             return res.status(403).json({ error: 'Hanya admin yang bisa edit buku' });
         }
 
-        const { title, author, price, stock, rating } = req.body;
+        const { title, author, price, stock, rating, description, isbn, publisher, category } = req.body;
         
         if (req.file) {
             // Update dengan gambar baru
-            const imageData = req.file.buffer;
-            const imageName = req.file.originalname;
+            const imageName = req.file.filename;
             
             const result = await pool.query(
-                'UPDATE books SET title = $1, author = $2, price = $3, stock = $4, rating = $5, image = $6, image_data = $7 WHERE id = $8 RETURNING *',
-                [title, author, price, stock, rating, imageName, imageData, req.params.id]
+                'UPDATE books SET title = $1, author = $2, price = $3, stock = $4, rating = $5, image = $6, description = $7, isbn = $8, publisher = $9, category = $10 WHERE id = $11 RETURNING *',
+                [title, author, price, stock, rating, imageName, description, isbn, publisher, category, req.params.id]
             );
-            res.json(result.rows[0]);
+            res.json({ success: true, message: 'Buku berhasil diperbarui', data: result.rows[0] });
         } else {
             // Update tanpa gambar
             const result = await pool.query(
-                'UPDATE books SET title = $1, author = $2, price = $3, stock = $4, rating = $5 WHERE id = $6 RETURNING *',
-                [title, author, price, stock, rating, req.params.id]
+                'UPDATE books SET title = $1, author = $2, price = $3, stock = $4, rating = $5, description = $6, isbn = $7, publisher = $8, category = $9 WHERE id = $10 RETURNING *',
+                [title, author, price, stock, rating, description, isbn, publisher, category, req.params.id]
             );
-            res.json(result.rows[0]);
+            res.json({ success: true, message: 'Buku berhasil diperbarui', data: result.rows[0] });
         }
     } catch (err) {
         console.error('Update book error:', err);
@@ -295,21 +349,9 @@ app.delete('/api/books/:id', verifyToken, async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
-app.delete('/api/books/:id', verifyToken, async (req, res) => {
-    try {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Hanya admin yang bisa hapus buku' });
-        }
 
-        await pool.query('DELETE FROM books WHERE id = $1', [req.params.id]);
-        res.json({ success: true, message: 'Buku berhasil dihapus' });
-    } catch (err) {
-        console.error('Delete book error:', err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-// ============ CUSTOMERS ROUTES ============
-app.get('/api/customers', verifyToken, async (req, res) => {
+// ============ CUSTOMERS ROUTES (Admin Only) ============
+app.get('/api/customers', verifyAdmin, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM customers ORDER BY id');
         res.json({
@@ -322,35 +364,35 @@ app.get('/api/customers', verifyToken, async (req, res) => {
     }
 });
 
-app.post('/api/customers', verifyToken, async (req, res) => {
+app.post('/api/customers', verifyAdmin, async (req, res) => {
     try {
         const { name, email, phone, address } = req.body;
         const result = await pool.query(
             'INSERT INTO customers (name, email, phone, address) VALUES ($1, $2, $3, $4) RETURNING *',
             [name, email, phone, address]
         );
-        res.json(result.rows[0]);
+        res.json({success: true, data: result.rows[0]});
     } catch (err) {
         console.error('Create customer error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-app.put('/api/customers/:id', verifyToken, async (req, res) => {
+app.put('/api/customers/:id', verifyAdmin, async (req, res) => {
     try {
         const { name, email, phone, address } = req.body;
         const result = await pool.query(
             'UPDATE customers SET name = $1, email = $2, phone = $3, address = $4 WHERE id = $5 RETURNING *',
             [name, email, phone, address, req.params.id]
         );
-        res.json(result.rows[0]);
+        res.json({success: true, data: result.rows[0]});
     } catch (err) {
         console.error('Update customer error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-app.delete('/api/customers/:id', verifyToken, async (req, res) => {
+app.delete('/api/customers/:id', verifyAdmin, async (req, res) => {
     try {
         await pool.query('DELETE FROM customers WHERE id = $1', [req.params.id]);
         res.json({ success: true, message: 'Pelanggan berhasil dihapus' });
@@ -361,16 +403,26 @@ app.delete('/api/customers/:id', verifyToken, async (req, res) => {
 });
 
 // ============ ORDERS ROUTES ============
+// Admin: read-only, Customer: create & read their own
 app.get('/api/orders', verifyToken, async (req, res) => {
     try {
-        const result = await pool.query(`
+        // Admin sees all orders, Customer sees only their own
+        let query_text = `
             SELECT o.*, 
                    json_agg(json_build_object('id', oi.id, 'book_id', oi.book_id, 'quantity', oi.quantity, 'unit_price', oi.unit_price)) as items
             FROM orders o
             LEFT JOIN order_items oi ON o.id = oi.order_id
-            GROUP BY o.id
-            ORDER BY o.id DESC
-        `);
+        `;
+        
+        // Filter by customer if not admin
+        if (req.user.role !== 'admin') {
+            query_text += ` WHERE o.customer_id = $1`;
+        }
+        
+        query_text += ` GROUP BY o.id ORDER BY o.id DESC`;
+        
+        const params = req.user.role !== 'admin' ? [req.user.id] : [];
+        const result = await pool.query(query_text, params);
         res.json({
             success: true,
             data: result.rows
@@ -384,6 +436,11 @@ app.get('/api/orders', verifyToken, async (req, res) => {
 app.post('/api/orders', verifyToken, async (req, res) => {
     try {
         const { customer_id, total_amount, items, status, payment_method, notes } = req.body;
+        
+        // Customer can only create orders for themselves
+        if (req.user.role !== 'admin' && customer_id !== req.user.id) {
+            return res.status(403).json({ error: 'Anda hanya bisa membuat pesanan untuk diri sendiri' });
+        }
         
         // Create order
         const orderResult = await pool.query(
@@ -416,21 +473,8 @@ app.post('/api/orders', verifyToken, async (req, res) => {
 
 app.put('/api/orders/:id', verifyToken, async (req, res) => {
     try {
-        const { status, payment_method, notes } = req.body;
-        const result = await pool.query(
-            'UPDATE orders SET status = $1, payment_method = $2, notes = $3 WHERE id = $4 RETURNING *',
-            [status, payment_method, notes, req.params.id]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Pesanan tidak ditemukan' });
-        }
-        
-        res.json({
-            success: true,
-            message: 'Pesanan berhasil diupdate',
-            data: result.rows[0]
-        });
+        // Orders are read-only - no updates allowed
+        return res.status(403).json({ error: 'Pesanan tidak dapat diubah. Hubungi admin jika ada masalah.' });
     } catch (err) {
         console.error('Update order error:', err);
         res.status(500).json({ error: 'Server error' });
@@ -439,11 +483,8 @@ app.put('/api/orders/:id', verifyToken, async (req, res) => {
 
 app.delete('/api/orders/:id', verifyToken, async (req, res) => {
     try {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Hanya admin yang bisa hapus pesanan' });
-        }
-        await pool.query('DELETE FROM orders WHERE id = $1', [req.params.id]);
-        res.json({ success: true, message: 'Pesanan berhasil dihapus' });
+        // Orders are read-only - no deletes allowed
+        return res.status(403).json({ error: 'Pesanan tidak dapat dihapus. Hubungi admin jika ada masalah.' });
     } catch (err) {
         console.error('Delete order error:', err);
         res.status(500).json({ error: 'Server error' });
@@ -546,7 +587,7 @@ app.get('/api/health', (req, res) => {
 
 // ============ START SERVER ============
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`\n✅ Server berjalan di http://localhost:${PORT}`);
     console.log(`📚 Toko Buku API - Backend Server`);
     console.log(`🔐 JWT Authentication Enabled`);
@@ -559,9 +600,37 @@ app.listen(PORT, () => {
     console.log(`\n🔗 Health Check: GET /api/health\n`);
 });
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-    await pool.end();
-    console.log('\n🛑 Server dihentikan');
-    process.exit(0);
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    server.close(() => {
+        console.log('Server closed');
+        pool.end(() => {
+            console.log('Pool closed');
+            process.exit(0);
+        });
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully...');
+    server.close(() => {
+        console.log('Server closed');
+        pool.end(() => {
+            console.log('Pool closed');
+            process.exit(0);
+        });
+    });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+    process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err);
+    process.exit(1);
 });

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { registerAPI } from '../utils/api';
 import '../styles/Register.css';
 
 const Register = ({ onRegister, onSwitchToLogin }) => {
@@ -52,32 +53,15 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
 
         try {
             // Coba koneksi ke API backend
-            const response = await fetch('http://localhost:5000/api/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: name,
-                    email: email,
-                    password: password,
-                }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setSuccess('Registrasi berhasil! Silakan login.');
-                setTimeout(() => {
-                    onRegister(data.user);
-                }, 1500);
-            } else {
-                const data = await response.json();
-                setError(data.error || 'Registrasi gagal!');
-            }
+            const data = await registerAPI(name, email, password);
+            setSuccess('✅ Registrasi berhasil! Silakan login.');
+            setTimeout(() => {
+                onRegister(data.user);
+            }, 1500);
         } catch (err) {
             // Fallback jika backend tidak tersedia - registrasi offline
             console.log('Backend tidak tersedia, menggunakan mode offline');
-            setSuccess('✓ Registrasi berhasil! Silakan login dengan akun baru Anda.');
+            setSuccess('✅ Registrasi berhasil! Silakan login dengan akun baru Anda.');
             
             // Simpan ke localStorage sebagai user terdaftar
             const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');

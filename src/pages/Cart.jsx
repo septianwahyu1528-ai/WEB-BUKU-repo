@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import ProductDetail from './ProductDetail';
 import '../styles/Cart.css';
 
 const Cart = () => {
     const [cartItems, setCartItems] = useState([]);
+    const [selectedProductId, setSelectedProductId] = useState(null);
 
     useEffect(() => {
         const savedCart = localStorage.getItem('cart');
@@ -81,17 +83,21 @@ const Cart = () => {
 
     return (
         <div className="cart-container">
-            <div className="cart-header">
-                <h2>🛒 Keranjang Belanja</h2>
-                <p>Total Items: {getTotalItems()} | Total: Rp {getTotalPrice()}</p>
-            </div>
-
-            {cartItems.length === 0 ? (
-                <div className="empty-cart">
-                    <p>Keranjang Anda kosong</p>
-                    <p>Tambahkan pesanan dari halaman Pesanan</p>
-                </div>
+            {selectedProductId ? (
+                <ProductDetail productId={selectedProductId} onBack={() => setSelectedProductId(null)} />
             ) : (
+                <>
+                    <div className="cart-header">
+                        <h2>🛒 Keranjang Belanja</h2>
+                        <p>Total Items: {getTotalItems()} | Total: Rp {getTotalPrice()}</p>
+                    </div>
+
+                    {cartItems.length === 0 ? (
+                        <div className="empty-cart">
+                            <p>Keranjang Anda kosong</p>
+                            <p>Tambahkan pesanan dari halaman Pesanan</p>
+                        </div>
+                    ) : (
                 <>
                     <div className="cart-items">
                         <table className="cart-table">
@@ -134,6 +140,14 @@ const Cart = () => {
                                         </td>
                                         <td className="item-total">{item.totalPrice || `Rp ${(parseFloat(item.priceValue || item.price || 0) * item.quantity).toLocaleString('id-ID')}`}</td>
                                         <td className="item-action">
+                                            <button 
+                                                className="btn-detail"
+                                                onClick={() => setSelectedProductId(item.id)}
+                                                title="Lihat detail produk"
+                                                style={{marginRight: '8px', padding: '6px 10px', backgroundColor: '#9b59b6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px'}}
+                                            >
+                                                👁️ Detail
+                                            </button>
                                             <button 
                                                 className="btn-remove"
                                                 onClick={() => handleDeleteItem(item.id)}
@@ -179,6 +193,8 @@ const Cart = () => {
                             </button>
                         </div>
                     </div>
+                    </>
+                    )}
                 </>
             )}
         </div>

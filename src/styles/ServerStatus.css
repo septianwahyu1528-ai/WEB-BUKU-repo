@@ -1,0 +1,144 @@
+.server-status-banner {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaba 100%);
+    border: 2px solid #ff9800;
+    border-radius: 8px;
+    margin: 16px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+}
+
+.status-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.status-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.status-text {
+    flex: 1;
+}
+
+.status-text strong {
+    display: block;
+    color: #d84315;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.status-text p {
+    margin: 0;
+    color: #e64a19;
+    font-size: 13px;
+}
+
+.help-toggle {
+    background: transparent;
+    border: 2px solid #ff9800;
+    color: #ff9800;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.help-toggle:hover {
+    background: #ff9800;
+    color: white;
+}
+
+.help-content {
+    background: rgba(255, 255, 255, 0.8);
+    border-top: 1px solid #ff9800;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-radius: 6px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 400px;
+    }
+}
+
+.help-content h4 {
+    margin: 0 0 8px 0;
+    color: #d84315;
+    font-size: 13px;
+}
+
+.help-content ol {
+    margin: 0 0 8px 20px;
+    padding: 0;
+    color: #333;
+    font-size: 13px;
+}
+
+.help-content li {
+    margin: 6px 0;
+}
+
+.help-content code {
+    background: #f5f5f5;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    color: #d84315;
+    font-weight: bold;
+}
+
+.help-note {
+    background: #f9f9f9;
+    border-left: 3px solid #ff9800;
+    padding: 8px 12px;
+    margin: 0 0 12px 0;
+    font-size: 12px;
+    color: #555;
+    line-height: 1.6;
+}
+
+.help-close {
+    background: #ff9800;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s ease;
+}
+
+.help-close:hover {
+    background: #f57c00;
+}
+
+@media (max-width: 600px) {
+    .server-status-banner {
+        margin: 8px;
+        padding: 12px;
+    }
+    
+    .status-content {
+        flex-wrap: wrap;
+    }
+    
+    .help-toggle {
+        align-self: flex-start;
+    }
+}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/Orders.css';
 
-const Orders = () => {
+const Orders = ({ user, onNavigate }) => {
     const [orders, setOrders] = useState([]);
     const [books, setBooks] = useState([]);
     const [customers, setCustomers] = useState([]);
@@ -14,6 +14,27 @@ const Orders = () => {
         status: '',
         payment_method: ''
     });
+
+    // Check login status dan admin role untuk Admin Orders page
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        const user = storedUser ? JSON.parse(storedUser) : null;
+        
+        if (!storedUser) {
+            setError('Anda harus login terlebih dahulu untuk melihat data pesanan.');
+            setLoading(false);
+            return;
+        }
+        
+        // Admin Orders page - admin only
+        if (user.role === 'admin') {
+            // Admin dapat mengakses halaman ini
+        } else {
+            setError('Akses ditolak. Halaman ini hanya untuk admin. Gunakan halaman Riwayat untuk melihat pesanan Anda.');
+            setLoading(false);
+            return;
+        }
+    }, []);
 
     // Fetch orders dari API
     useEffect(() => {
@@ -35,19 +56,35 @@ const Orders = () => {
                 };
 
                 // Fetch orders
-                const ordersResponse = await axios.get('http://localhost:5000/api/orders', { headers });
+                let ordersResponse;
+                try {
+                    ordersResponse = await axios.get('/api/orders', { headers, timeout: 3000 });
+                } catch (err) {
+                    ordersResponse = await axios.get('http://localhost:5000/api/orders', { headers, timeout: 3000 });
+                }
                 const ordersData = ordersResponse.data.data || ordersResponse.data;
-                setOrders(ordersData);
+                setOrders(Array.isArray(ordersData) ? ordersData : []);
+                setError('');
 
                 // Fetch books
-                const booksResponse = await axios.get('http://localhost:5000/api/books');
+                let booksResponse;
+                try {
+                    booksResponse = await axios.get('/api/books', { timeout: 3000 });
+                } catch (err) {
+                    booksResponse = await axios.get('http://localhost:5000/api/books', { timeout: 3000 });
+                }
                 const booksData = booksResponse.data.data || booksResponse.data;
-                setBooks(booksData);
+                setBooks(Array.isArray(booksData) ? booksData : []);
 
                 // Fetch customers
-                const customersResponse = await axios.get('http://localhost:5000/api/customers', { headers });
+                let customersResponse;
+                try {
+                    customersResponse = await axios.get('/api/customers', { headers, timeout: 3000 });
+                } catch (err) {
+                    customersResponse = await axios.get('http://localhost:5000/api/customers', { headers, timeout: 3000 });
+                }
                 const customersData = customersResponse.data.data || customersResponse.data;
-                setCustomers(customersData);
+                setCustomers(Array.isArray(customersData) ? customersData : []);
             } catch (error) {
                 console.error('Error fetching data:', error);
                 setError('Gagal memuat data pesanan. Pastikan Anda sudah login.');
@@ -135,9 +172,42 @@ const Orders = () => {
                 <p>Kelola dan pantau semua pesanan pelanggan</p>
             </div>
 
-            {error && <div className="error-message" style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#fee', border: '1px solid #fcc', borderRadius: '4px', color: '#c33' }}>{error}</div>}
+            {error && (
+                <div className="error-message" style={{ 
+                    marginBottom: '20px', 
+                    padding: '20px', 
+                    backgroundColor: '#fee', 
+                    border: '2px solid #fcc', 
+                    borderRadius: '4px', 
+                    color: '#c33',
+                    textAlign: 'center'
+                }}>
+                    <p style={{ margin: '0 0 15px 0', fontSize: '16px', fontWeight: 'bold' }}>
+                        🔐 {error}
+                    </p>
+                    {!localStorage.getItem('user') && onNavigate && (
+                        <button 
+                            onClick={() => onNavigate('login')}
+                            style={{
+                                padding: '10px 20px',
+                                backgroundColor: '#e67e22',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            ➜ Kembali ke Login
+                        </button>
+                    )}
+                </div>
+            )}
 
-            {!loading && !error && orders.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>Tidak ada data pesanan yang ditemukan.</div>}
+            {!error && (
+                <>
+                    {!loading && orders.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>Tidak ada data pesanan yang ditemukan.</div>}
 
             <div className="orders-stats">
                 <div className="stat-card">
@@ -186,18 +256,20 @@ const Orders = () => {
                                 <td>{order.payment_method || '-'}</td>
                                 <td>{new Date(order.order_date).toLocaleDateString('id-ID')}</td>
                                 <td>
-                                    <div className="action-buttons">
+                                    <div className="action-buttons" style={{opacity: 0.5, cursor: 'not-allowed'}}>
                                         <button 
                                             className="btn-edit"
-                                            onClick={() => handleEditOrder(order)}
-                                            title="Edit"
+                                            disabled
+                                            title="Pesanan hanya dapat dibaca"
+                                            style={{opacity: 0.5, cursor: 'not-allowed'}}
                                         >
                                             ✏️
                                         </button>
                                         <button 
                                             className="btn-delete"
-                                            onClick={() => handleDeleteOrder(order.id)}
-                                            title="Hapus"
+                                            disabled
+                                            title="Pesanan hanya dapat dibaca"
+                                            style={{opacity: 0.5, cursor: 'not-allowed'}}
                                         >
                                             🗑️
                                         </button>
@@ -209,6 +281,8 @@ const Orders = () => {
                     </tbody>
                 </table>
             </div>
+                </>
+            )}
 
             {/* Edit Modal */}
             {showEditModal && (

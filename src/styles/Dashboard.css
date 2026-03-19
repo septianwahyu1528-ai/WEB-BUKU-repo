@@ -255,8 +255,8 @@
     font-weight: 500;
 }
 
-.featured-price {
-    font-size: 18px;
+.book-featured-price {
+    font-size: 14px;
     font-weight: bold;
     color: #667eea;
     margin-bottom: 12px;
@@ -415,8 +415,8 @@
     margin-bottom: 10px;
 }
 
-.price {
-    font-size: 20px;
+.book-price {
+    font-size: 14px;
     font-weight: bold;
     color: #667eea;
     margin-bottom: 15px;

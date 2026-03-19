@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { loginAPI } from '../utils/api';
 import '../styles/Login.css';
 
 const Login = ({ onLogin, onSwitchToRegister }) => {
     const [userType, setUserType] = useState('pelanggan');
-    const [email, setEmail] = useState('pelanggan@toko.buku.com');
+    const [email, setEmail] = useState('pelanggan1@toko.buku.com');
     const [password, setPassword] = useState('pelanggan123');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -14,7 +15,7 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
             setEmail('admin@tokobuku.com');
             setPassword('admin123');
         } else {
-            setEmail('pelanggan@toko.buku.com');
+            setEmail('pelanggan1@toko.buku.com');
             setPassword('pelanggan123');
         }
     };
@@ -32,24 +33,8 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
 
         try {
             // Coba koneksi ke API backend
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: email,
-                    password: password,
-                }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                onLogin(data.user, data.token);
-            } else {
-                const data = await response.json();
-                setError(data.error || 'Login gagal!');
-            }
+            const data = await loginAPI(email, password);
+            onLogin(data.user, data.token);
         } catch (err) {
             // Fallback jika backend tidak tersedia - check localStorage
             console.log('Backend tidak tersedia, menggunakan mode offline');

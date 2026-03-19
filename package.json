@@ -4,11 +4,12 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
+    "dev": "node run.js",
+    "dev:concurrent": "concurrently --kill-others \"node server/index.js\" \"vite\" --names \"Backend,Frontend\"",
+    "dev:watch": "concurrently \"npm run server:dev\" \"vite\"",
     "server": "node server/index.js",
-    "server:dev": "nodemon server/index.js",
+    "server:dev": "nodemon --inspect=9229 server/index.js",
+    "build": "tsc -b && vite build",
     "setup-db": "node setup-database.js",
     "db:setup": "psql -h localhost -U postgres -f database_complete_setup.sql",
     "db:migrate": "node server/database/add-image-column.js"
@@ -29,6 +30,8 @@
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@vitejs/plugin-react": "^4.2.0",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.0"
   },

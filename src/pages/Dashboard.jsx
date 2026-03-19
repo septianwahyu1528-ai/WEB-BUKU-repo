@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { getBooksAPI, getOrdersAPI, getCustomersAPI } from '../utils/api';
 import '../styles/Dashboard.css';
 
 const Dashboard = ({ user, onLogout }) => {
@@ -21,71 +22,59 @@ const Dashboard = ({ user, onLogout }) => {
                 const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
                 // Fetch books
-                console.log('🔄 Making request to /api/books...');
-                let booksResponse;
                 try {
-                    booksResponse = await axios.get('/api/books', { timeout: 5000 });
+                    const booksData = await getBooksAPI();
+                    const booksList = booksData.data || booksData;
+                    console.log('📖 Books data:', Array.isArray(booksList) ? booksList.length : 0, 'items');
+                    
+                    if (Array.isArray(booksList)) {
+                        const formattedBooks = booksList.map(book => ({
+                            id: book.id,
+                            title: book.title,
+                            author: book.author,
+                            priceValue: book.price,
+                            price: `Rp ${parseInt(book.price || 0).toLocaleString('id-ID')}`,
+                            image: book.image || '',
+                            rating: book.rating || 0,
+                            stock: book.stock || 0,
+                            description: book.description || '',
+                            isbn: book.isbn || '',
+                            publisher: book.publisher || '',
+                            category: book.category || ''
+                        }));
+                        setBooks(formattedBooks);
+                    }
                 } catch (err) {
-                    console.log('Proxy failed, trying direct backend...');
-                    booksResponse = await axios.get('http://localhost:5000/api/books', { timeout: 5000 });
+                    console.error('Error fetching books:', err.message);
+                    setBooks([]);
                 }
-                
-                console.log('📦 API Response:', booksResponse.status, booksResponse.data);
-                
-                const booksData = booksResponse.data.data || booksResponse.data;
-                console.log('📖 Books data:', booksData.length, 'items');
-                
-                if (!Array.isArray(booksData)) {
-                    throw new Error('Books data is not an array');
-                }
-                
-                const formattedBooks = booksData.map(book => ({
-                    id: book.id,
-                    title: book.title,
-                    author: book.author,
-                    priceValue: book.price,
-                    price: `Rp ${parseInt(book.price).toLocaleString('id-ID')}`,
-                    image: book.image || '',
-                    rating: book.rating || 0,
-                    stock: book.stock || 0,
-                    description: book.description || '',
-                    isbn: book.isbn || '',
-                    publisher: book.publisher || '',
-                    category: book.category || ''
-                }));
-                console.log('✓ Formatted books ready:', formattedBooks.length, 'items');
-                console.log('  First book:', formattedBooks[0]);
-                console.log('  Book images:', formattedBooks.map(b => b.image));
-                console.log('  Books state will be set to:', formattedBooks);
-                setBooks(formattedBooks);
-                setLoading(false);
-                console.log('✅ Loading set to false');
 
                 // Fetch orders
                 try {
-                    const ordersResponse = await axios.get('/api/orders', { headers });
-                    const ordersData = ordersResponse.data.data || ordersResponse.data;
-                    setOrders(ordersData);
+                    const ordersData = await getOrdersAPI(headers);
+                    const ordersList = ordersData.data || ordersData;
+                    setOrders(Array.isArray(ordersList) ? ordersList : []);
                 } catch (error) {
-                    console.error('Error fetching orders:', error);
+                    console.error('Error fetching orders:', error.message);
                     setOrders([]);
                 }
 
                 // Fetch customers
                 try {
-                    const customersResponse = await axios.get('/api/customers', { headers });
-                    const customersData = customersResponse.data.data || customersResponse.data;
-                    setCustomers(customersData);
+                    const customersData = await getCustomersAPI(headers);
+                    const customersList = customersData.data || customersData;
+                    setCustomers(Array.isArray(customersList) ? customersList : []);
                 } catch (error) {
-                    console.error('Error fetching customers:', error);
+                    console.error('Error fetching customers:', error.message);
                     setCustomers([]);
                 }
             } catch (error) {
-                console.error('❌ Error fetching data:', error.message);
-                setError(error.message);
+                console.error('❌ [Dashboard] Error fetching data:', error.message);
                 setBooks([]);
+                setError('⚠️ Menampilkan mode offline. Pastikan backend Express sedang berjalan.\n▶ Jalankan: npm run dev');
                 setOrders([]);
                 setCustomers([]);
+            } finally {
                 setLoading(false);
             }
         };
@@ -272,6 +261,12 @@ const Dashboard = ({ user, onLogout }) => {
 
     return (
         <div className="dashboard">
+            {error && (
+                <div style={{background: '#ffe6e6', border: '1px solid #ffcccc', color: '#d32f2f', padding: '15px 20px', margin: '20px', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <span>{error}</span>
+                    <button onClick={() => window.location.reload()} style={{background: '#d32f2f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '14px'}}>Coba Lagi</button>
+                </div>
+            )}
             {/* User Profile Section */}
             <section className="profile-section">
                 <div className="profile-card">
@@ -366,7 +361,7 @@ const Dashboard = ({ user, onLogout }) => {
                                         <span className="stars">{'⭐'.repeat(Math.floor(book.rating || 0))}</span>
                                         <span className="rating-value">{book.rating || 0}</span>
                                     </div>
-                                    <p className="featured-price">{book.price}</p>
+                                    <p className="book-featured-price">{book.price}</p>
                                     <button 
                                         className="featured-btn"
                                         onClick={() => handleAddToCart(book)}
@@ -441,7 +436,7 @@ const Dashboard = ({ user, onLogout }) => {
                                         <span> {book.rating || 0}</span>
                                     </div>
                                     <p className="stock">Stock: {book.stock || 0}</p>
-                                    <p className="price">{book.price}</p>
+                                    <p className="book-price">{book.price}</p>
                                 </div>
                             </div>
                         ))}
