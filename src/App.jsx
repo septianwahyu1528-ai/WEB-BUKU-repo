@@ -28,11 +28,19 @@ function App() {
     }, []);
 
     const handleLogin = (userData, token) => {
+        console.log('📝 [App] Logging in user:', userData.email);
+        console.log('🔐 [App] Token received:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+        
         setUser(userData);
         setIsLoggedIn(true);
         localStorage.setItem('user', JSON.stringify(userData));
+        
         if (token) {
             localStorage.setItem('token', token);
+            console.log('✅ [App] Token saved to localStorage');
+        } else {
+            console.warn('⚠️ [App] No token received from login');
+            localStorage.removeItem('token');
         }
         setShowRegister(false);
     };

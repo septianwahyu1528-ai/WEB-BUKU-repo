@@ -201,7 +201,16 @@ function Products({ user, onNavigate }) {
             }
 
             const token = localStorage.getItem('token');
+            console.log('🔐 [Products] Token dari localStorage:', token ? token.substring(0, 20) + '...' : 'TIDAK ADA');
+            
+            if (!token) {
+                alert('⚠️ Token tidak ditemukan! Silakan login ulang.');
+                return;
+            }
+            
+            // Setup headers dengan token
             const headers = { 'Authorization': `Bearer ${token}` };
+            console.log('📤 [Products] Headers yang dikirim:', { Authorization: headers.Authorization ? 'Bearer ...' : 'TIDAK ADA' });
             
             if (editingBook) {
                 // Update product (gunakan FormData jika ada file baru)
@@ -217,11 +226,10 @@ function Products({ user, onNavigate }) {
                     formDataMultipart.append('isbn', formData.isbn);
                     formDataMultipart.append('publisher', formData.publisher);
                     formDataMultipart.append('image', imageFile);
+                    console.log('📝 [Products] Updating book:', editingBook.id);
                     await axios.put(`http://localhost:5000/api/books/${editingBook.id}`, formDataMultipart, {
-                        headers: {
-                            ...headers,
-                            'Content-Type': 'multipart/form-data'
-                        }
+                        headers: headers
+                        // Jangan set Content-Type explicitly untuk FormData - axios handle otomatis
                     });
                 } else {
                     const data = {
@@ -256,12 +264,12 @@ function Products({ user, onNavigate }) {
                 if (imageFile) {
                     formDataMultipart.append('image', imageFile);
                 }
+                console.log('📝 [Products] Creating new book...');
                 const response = await axios.post('http://localhost:5000/api/books', formDataMultipart, {
-                    headers: {
-                        ...headers,
-                        'Content-Type': 'multipart/form-data'
-                    }
+                    headers: headers
+                    // Jangan set Content-Type explicitly untuk FormData - axios handle otomatis
                 });
+                console.log('✅ [Products] Book created:', response.data.data);
                 setBooks([...books, response.data.data]);
                 alert('Produk berhasil ditambahkan!');
             }
@@ -270,8 +278,13 @@ function Products({ user, onNavigate }) {
             setImageFile(null);
             setImagePreview(null);
         } catch (err) {
-            console.error('Error saving product:', err);
-            alert('Gagal menyimpan produk: ' + (err.response?.data?.error || err.message));
+            console.error('❌ [Products] Error saving product:', err);
+            console.error('Response status:', err.response?.status);
+            console.error('Response data:', err.response?.data);
+            console.error('Error message:', err.message);
+            
+            const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error';
+            alert('❌ Gagal menyimpan produk:\n' + errorMsg);
         }
     };
 
@@ -282,14 +295,20 @@ function Products({ user, onNavigate }) {
 
         try {
             const token = localStorage.getItem('token');
+            if (!token) {
+                alert('⚠️ Token tidak ditemukan! Silakan login ulang.');
+                return;
+            }
+            
             const headers = { 'Authorization': `Bearer ${token}` };
+            console.log('🗑️ [Products] Deleting book:', bookId);
             
             await axios.delete(`http://localhost:5000/api/books/${bookId}`, { headers });
             setBooks(books.filter(b => b.id !== bookId));
             alert('Produk berhasil dihapus!');
         } catch (err) {
-            console.error('Error deleting product:', err);
-            alert('Gagal menghapus produk: ' + (err.response?.data?.error || err.message));
+            console.error('❌ [Products] Error deleting product:', err);
+            alert('❌ Gagal menghapus produk: ' + (err.response?.data?.error || err.message));
         }
     };
 

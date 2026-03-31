@@ -5,14 +5,19 @@
 
 // Determine API base URL
 const getAPIBaseURL = () => {
-    // In development with Vite proxy: use relative path
+    // In development with Vite: use relative path (Vite proxy handles it)
+    // Proxy requires /api prefix and is configured in vite.config.js
     if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        const isViteServer = window.location.port === '5173' || window.location.port === '5174';
-        if (isViteServer) {
-            return ''; // Use relative paths for Vite proxy
+        const port = parseInt(window.location.port);
+        // If running on Vite dev server (port > 5000), use relative paths
+        // Vite proxy will forward to backend
+        if (port > 5000 && port < 6000) {
+            console.log('[API] Using Vite proxy for /api requests');
+            return ''; // Relative paths work with Vite proxy
         }
     }
-    // Fallback to direct backend URL
+    // Fallback to direct backend URL (production)
+    console.log('[API] Using direct backend URL: http://localhost:5000');
     return 'http://localhost:5000';
 };
 

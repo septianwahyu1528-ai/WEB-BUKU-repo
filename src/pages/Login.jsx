@@ -33,11 +33,15 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
 
         try {
             // Coba koneksi ke API backend
+            console.log('🔐 [Login] Attempting login with:', email);
             const data = await loginAPI(email, password);
+            console.log('📨 [Login] Response:', { user: data.user, hasToken: !!data.token });
+            console.log('🔑 [Login] Token:', data.token ? data.token.substring(0, 30) + '...' : 'NO TOKEN');
             onLogin(data.user, data.token);
         } catch (err) {
             // Fallback jika backend tidak tersedia - check localStorage
             console.log('Backend tidak tersedia, menggunakan mode offline');
+            console.error('❌ [Login] Error:', err.message);
             
             // Check default credentials
             const defaultUsers = [

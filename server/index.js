@@ -46,8 +46,15 @@ const app = express();
 // Initialize database
 const pool = initDB();
 
-// Middleware
-app.use(cors());
+// Middleware - CORS
+const corsOptions = {
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Serve static files dari public folder
@@ -72,35 +79,56 @@ pool.query('SELECT NOW()', (err, result) => {
 
 // Middleware untuk verify token
 const verifyToken = (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1];
+    const authHeader = req.headers['authorization'];
+    const token = authHeader?.split(' ')[1];
+    
+    console.log('🔐 [Verify Token]');
+    console.log('  Authorization header:', authHeader ? authHeader.substring(0, 30) + '...' : 'TIDAK ADA');
+    console.log('  Token extracted:', token ? token.substring(0, 30) + '...' : 'TIDAK ADA');
+    
     if (!token) {
+        console.log('  ❌ Token tidak ditemukan');
         return res.status(401).json({ error: 'Token tidak ditemukan' });
     }
     
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
+        console.log('  ✅ Token valid. User ID:', decoded.id);
         req.user = decoded;
         next();
     } catch (err) {
-        return res.status(403).json({ error: 'Token tidak valid' });
+        console.log('  ❌ Token verification failed:', err.message);
+        return res.status(403).json({ error: 'Token tidak valid: ' + err.message });
     }
 };
 
 // Middleware untuk verify admin role
 const verifyAdmin = (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1];
+    const authHeader = req.headers['authorization'];
+    const token = authHeader?.split(' ')[1];
+    
+    console.log('👤 [Verify Admin]');
+    console.log('  Authorization header:', authHeader ? authHeader.substring(0, 30) + '...' : 'TIDAK ADA');
+    
     if (!token) {
+        console.log('  ❌ Token tidak ditemukan');
         return res.status(401).json({ error: 'Token tidak ditemukan' });
     }
     
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
+        console.log('  Role:', decoded.role);
+        
         if (decoded.role !== 'admin') {
+            console.log('  ❌ Akses ditolak - bukan admin');
             return res.status(403).json({ error: 'Akses ditolak. Hanya admin yang bisa mengakses fitur ini.' });
         }
+        
+        console.log('  ✅ Admin verified. User ID:', decoded.id);
         req.user = decoded;
         next();
     } catch (err) {
+        console.log('  ❌ Token verification failed:', err.message);
         return res.status(403).json({ error: 'Token tidak valid' });
     }
 };
@@ -113,7 +141,7 @@ const verifyCustomer = (req, res, next) => {
     }
     
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
         if (!['customer', 'user', 'pelanggan'].includes(decoded.role)) {
             return res.status(403).json({ error: 'Akses ditolak. Hanya pelanggan yang bisa akses fitur ini.' });
         }
@@ -153,7 +181,7 @@ app.post('/api/auth/login', async (req, res) => {
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role },
             JWT_SECRET,
-            { expiresIn: '24h' }
+            {}
         );
 
         res.json({
@@ -203,7 +231,7 @@ app.post('/api/auth/register', async (req, res) => {
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role },
             JWT_SECRET,
-            { expiresIn: '24h' }
+            {}
         );
 
         res.json({
@@ -260,6 +288,7 @@ app.post('/api/books', verifyToken, upload.single('image'), async (req, res) => 
         }
 
         const { title, author, price, stock, rating, description, isbn, publisher, publication_date, category } = req.body;
+
         const imageName = req.file ? req.file.filename : title.toLowerCase().replace(/\s+/g, '-') + '.svg';
 
         const result = await pool.query(
@@ -338,11 +367,18 @@ app.put('/api/books/:id', verifyToken, upload.single('image'), async (req, res) 
 
 app.delete('/api/books/:id', verifyToken, async (req, res) => {
     try {
+        console.log('🗑️ [DELETE BOOK] Request received');
+        console.log('   Book ID:', req.params.id);
+        console.log('   User:', req.user);
+        console.log('   User role:', req.user.role);
+        
         if (req.user.role !== 'admin') {
+            console.log('   ❌ Role check failed - user is not admin');
             return res.status(403).json({ error: 'Hanya admin yang bisa hapus buku' });
         }
 
         await pool.query('DELETE FROM books WHERE id = $1', [req.params.id]);
+        console.log('   ✅ Book deleted successfully');
         res.json({ success: true, message: 'Buku berhasil dihapus' });
     } catch (err) {
         console.error('Delete book error:', err);
