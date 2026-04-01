@@ -11,12 +11,15 @@ build/
 .next/
 out/
 
-# Environment variables
+# Environment variables (NEVER commit .env files with secrets!)
 .env
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
+!.env.example
 node mododules
 dist
 

@@ -7,6 +7,16 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 
+// Import Supabase Routes
+import supabaseAuthRoutes from './routes/supabase-auth.js';
+import supabaseBooksRoutes from './routes/supabase-books.js';
+import supabaseCustomersRoutes from './routes/supabase-customers.js';
+import supabaseOrdersRoutes from './routes/supabase-orders.js';
+import supabaseCartRoutes from './routes/supabase-cart.js';
+import supabaseHistoryRoutes from './routes/supabase-history.js';
+import supabaseDashboardRoutes from './routes/supabase-dashboard.js';
+import supabaseFilesRoutes from './routes/supabase-files.js';
+
 dotenv.config();
 
 // Buat folder images jika belum ada
@@ -616,10 +626,23 @@ app.post('/api/purchase-history', verifyToken, async (req, res) => {
     }
 });
 
+
 // ============ HEALTH CHECK ============
 app.get('/api/health', (req, res) => {
     res.json({ status: 'Server running', timestamp: new Date() });
 });
+
+// ============ SUPABASE ROUTES ============
+// Register all Supabase routes
+app.use(supabaseAuthRoutes);
+app.use(supabaseBooksRoutes);
+app.use(supabaseCustomersRoutes);
+app.use(supabaseOrdersRoutes);
+app.use(supabaseCartRoutes);
+app.use(supabaseHistoryRoutes);
+app.use(supabaseDashboardRoutes);
+app.use(supabaseFilesRoutes);
+
 
 // ============ START SERVER ============
 const PORT = process.env.PORT || 5000;
@@ -627,12 +650,22 @@ const server = app.listen(PORT, () => {
     console.log(`\n✅ Server berjalan di http://localhost:${PORT}`);
     console.log(`📚 Toko Buku API - Backend Server`);
     console.log(`🔐 JWT Authentication Enabled`);
-    console.log(`\n📋 Endpoints tersedia:`);
+    console.log(`☁️  Supabase Integration Ready`);
+    console.log(`\n📋 Traditional Endpoints tersedia:`);
     console.log(`  Auth: POST /api/auth/login, /api/auth/register`);
     console.log(`  Books: GET/POST/PUT/DELETE /api/books`);
     console.log(`  Customers: GET/POST/PUT/DELETE /api/customers`);
     console.log(`  Orders: GET/POST/PUT/DELETE /api/orders`);
     console.log(`  History: GET/POST /api/purchase-history`);
+    console.log(`\n📋 SUPABASE Endpoints:`);
+    console.log(`  Auth: POST /supabase/auth/register, /supabase/auth/login, /supabase/auth/logout`);
+    console.log(`  Books: GET/POST/PUT/DELETE /supabase/books(/categories)`);
+    console.log(`  Customers: GET/POST/PUT/DELETE /supabase/customers`);
+    console.log(`  Orders: GET/POST/PUT/DELETE /supabase/orders`);
+    console.log(`  Cart: GET/POST/PUT/DELETE /supabase/cart`);
+    console.log(`  History: GET /supabase/purchase-history, /supabase/purchase-stats`);
+    console.log(`  Dashboard: GET /supabase/dashboard/summary`);
+    console.log(`  Files: POST /supabase/upload-image, DELETE /supabase/delete-image`);
     console.log(`\n🔗 Health Check: GET /api/health\n`);
 });
 

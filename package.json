@@ -12,7 +12,8 @@
     "build": "tsc -b && vite build",
     "setup-db": "node setup-database.js",
     "db:setup": "psql -h localhost -U postgres -f database_complete_setup.sql",
-    "db:migrate": "node server/database/add-image-column.js"
+    "db:migrate": "node server/database/add-image-column.js",
+    "vercel-build": "vite build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0",
