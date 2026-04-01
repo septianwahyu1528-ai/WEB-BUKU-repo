@@ -92,7 +92,22 @@ const verifyAdmin = (req, res, next) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const hasSupabaseKey = !!(process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY);
+    const hasJwtSecret = !!process.env.JWT_SECRET;
+    
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        backend: 'running',
+        supabase: {
+            url: supabaseUrl ? '✓ Connected' : '✗ Missing VITE_SUPABASE_URL',
+            credentials: hasSupabaseKey ? '✓ Found' : '✗ Missing SUPABASE_SERVICE_KEY',
+            message: supabaseUrl && hasSupabaseKey ? 'Supabase ready' : 'Supabase not configured!'
+        },
+        jwt: hasJwtSecret ? '✓ Configured' : '✗ Missing JWT_SECRET',
+        environment: process.env.NODE_ENV
+    });
 });
 
 // Routes
